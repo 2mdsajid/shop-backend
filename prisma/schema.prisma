@@ -26,8 +26,8 @@ model Account {
 }
 
 model CartItem {
-  id        Int     @id @default(autoincrement())
-  productId String  @unique
+  id        Int  @id @unique @default(autoincrement())
+  productId String
   quantity  Int
   userId    String
   Product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -47,15 +47,15 @@ model Comment {
 }
 
 model Product {
-  id          String    @id @unique @default(uuid())
+  id          String     @id @unique @default(uuid())
   name        String
   description String
   price       Float
   imageUrl    String
   userId      String
-  CartItem    CartItem?
+  CartItem    CartItem[]
   Comment     Comment[]
-  User        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   Rating      Rating[]
   Review      Review[]
 
@@ -94,7 +94,7 @@ model Session {
 model User {
   id            String     @id @unique @default(uuid())
   name          String
-  email         String    @unique
+  email         String     @unique
   image         String?
   password      String?    @default("")
   role          String     @default("user")
