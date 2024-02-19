@@ -1,19 +1,7 @@
 import { Comment, Rating, Review } from '@prisma/client';
 import prisma from "../utils/prisma";
-import { TypeBaseProduct, TypeDetailedProduct } from "./product.types";
-
-export const listProducts = async (): Promise<TypeBaseProduct[]> => {
-    return prisma.product.findMany({
-        select: {
-            id: true,
-            name: true,
-            description: true,
-            price: true,
-            imageUrl: true,
-            userId: true
-        },
-    });
-};
+import { TItemForCheckout, TypeBaseProduct, TypeDetailedProduct } from "./product.types";
+import jwt from 'jsonwebtoken'
 
 export const getProductById = async (productId: string): Promise<TypeDetailedProduct | null> => {
     return prisma.product.findUnique({
@@ -26,63 +14,88 @@ export const getProductById = async (productId: string): Promise<TypeDetailedPro
             description: true,
             price: true,
             imageUrl: true,
+            category: true,
+            isFreeDelivery: true,
+            itemsLeft: true,
+            brand: true,
+            images: true,
             userId: true,
-            Comment: true,
-            Review: true,
-            Rating: true,
+            isNew: true,
+            hasDiscount: {
+                select: {
+                    state: true,
+                    value: true,
+                }
+            },
         },
     });
 };
 
-export const createProduct = async (productData: Omit<TypeBaseProduct, 'id'>): Promise<TypeBaseProduct> => {
-    return prisma.product.create({
-        data: productData,
-    });
-};
+export const createProduct = async (productData: TypeBaseProduct) => {
+    try {
+        const { name, description, price, imageUrl, category, isFreeDelivery, itemsLeft, brand, images, isNew, hasDiscount, userId } = productData
+        // Create product
+        const product = await prisma.product.create({
+            data: {
+                name,
+                description,
+                price,
+                imageUrl,
+                category,
+                isFreeDelivery,
+                itemsLeft,
+                brand,
+                images,
+                isNew,
+                userId,
+            },
+        });
 
-export const updateProduct = async (productId: string, productData: Partial<Omit<TypeBaseProduct, 'id'>>): Promise<TypeBaseProduct | null> => {
-    return prisma.product.update({
+        // If hasDiscount is provided, create discount and associate with the product
+        if (hasDiscount) {
+            await prisma.discount.create({
+                data: {
+                    state: hasDiscount.state,
+                    value: hasDiscount.value,
+                    productId: product.id,
+                },
+            });
+        }
+
+        const baseProduct = await prisma.product.findUnique({
+            where: { id: product.id },
+            select: {
+                name: true,
+                hasDiscount: true
+            }
+        })
+
+        return baseProduct
+
+
+    } catch (error) {
+    }
+}
+
+export const getLatestProduct = async () => {
+    const bags = await prisma.product.findMany({
         where: {
-            id: productId,
-        },
-        data: productData,
-    });
-};
-
-
-export const addCommentToProduct = async (productId: string, commentData: Omit<Comment, 'id'>): Promise<{ content: string }> => {
-    return prisma.comment.create({
-        data: {
-            ...commentData,
-            productId,
+            isNew: true,
         },
         select: {
-            content: true
-        }
-    });
-};
-
-export const addReviewToProduct = async (productId: string, reviewData: Omit<Review, 'id' | 'productId'>): Promise<{ content: string, title: string }> => {
-    return prisma.review.create({
-        data: {
-            ...reviewData,
-            productId,
+            id: true,
+            name: true,
+            price: true,
+            imageUrl: true,
+            category: true,
+            isFreeDelivery: true,
+            itemsLeft: true,
+            brand: true,
+            images: true,
+            isNew: true,
+            hasDiscount: true,
         },
-        select: {
-            title: true,
-            content: true
-        }
-    });
-};
+    })
+    return bags;
+}
 
-export const addRatingToProduct = async (productId: string, ratingData: Omit<Rating, 'id' | 'productId'>): Promise<{value:number}> => {
-    return prisma.rating.create({
-        data: {
-            ...ratingData,
-            productId,
-        },
-        select:{
-            value:true
-        }
-    });
-};

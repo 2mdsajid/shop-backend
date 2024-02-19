@@ -17,23 +17,32 @@ router.get("/", async (request: Request, response: Response) => {
 });
 
 // GET: Get a single Product by ID
-router.get("/:productId", async (request: Request, response: Response) => {
+router.get("/get/:productId", async (request: Request, response: Response) => {
   try {
     const productId = request.params.productId;
     const product = await ProductServices.getProductById(productId);
-
     if (!product) {
-      return response.status(404).json({ message: 'Product not found' });
+      return response.status(404).json({ data: null, message: 'Product Doesn\'t Exist' });
     }
-
-    return response.status(200).json(product);
+    return response.status(200).json({ data: product });
   } catch (error: any) {
-    return response.status(500).json({ message: error.message });
+    return response.status(500).json({ data: null, message: 'Internal Server Error' });
   }
 });
 
-// POST: Create a new Product
-router.post("/", productValidation, async (request: Request, response: Response) => {
+
+router.get('/get-latest', async (request: Request, response: Response) => {
+  try {
+    const latestBags = await ProductServices.getLatestProduct()
+    return response.status(201).json({ data: latestBags, message: 'Fetched Latest Products' });
+  } catch (error) {
+    return response.status(500).json({ data: null, message: 'Internal Server Error' });
+  }
+})
+
+
+// // POST: Create a new Product
+router.post("/add", checkUserExists, productValidation, async (request: Request, response: Response) => {
   try {
     const errors = validationResult(request);
     if (!errors.isEmpty()) {
@@ -49,30 +58,20 @@ router.post("/", productValidation, async (request: Request, response: Response)
   }
 });
 
-// PUT: Update a Product by ID
-router.put("/:productId", updateProductValidation, async (request: Request, response: Response) => {
+// get checkout token
+router.post('/get-checkout-token', itemsForCheckoutValidation, async (request: Request, response: Response) => {
   try {
-
-    const errors = validationResult(request);
+    const errors = validationResult(request.body);
     if (!errors.isEmpty()) {
-      return response.status(400).json({ message: errors.array()[0].msg });
+      return response.status(400).json({ data: null, message: errors.array()[0].msg });
     }
 
-    const productId = request.params.productId;
-    const updatedProduct = await ProductServices.updateProduct(productId, request.body);
-
-    if (!updatedProduct) {
-      return response.status(404).json({ message: 'Product not found' });
-    }
-
-    return response.status(200).json({
-      message: "Product updated successfully",
-      updatedProduct
-    });
-  } catch (error: any) {
-    return response.status(500).json({ message: error.message });
+    const checkoutToken = ProductServices.generateCheckoutToken(request.body)
+    return response.status(201).json({ data: checkoutToken, message: 'Fetched Latest Products' });
+  } catch (error) {
+    return response.status(500).json({ data: null, message: 'Internal Server Error' });
   }
-});
+})
 
 // POST: Add a Comment to a Product
 router.post("/:productId/comments", commentValidation, async (request: Request, response: Response) => {
