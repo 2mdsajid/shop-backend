@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
 import * as ProductServices from './product.services'; // Import the product services
 import { body, validationResult } from 'express-validator';
-import { commentValidation, productValidation, ratingValidation, reviewValidation, updateProductValidation } from './product.types';
-
+import { commentValidation, getTokenItemsValidation, itemsForCheckoutValidation, productValidation, ratingValidation, reviewValidation, updateProductValidation } from './product.types';
+import { checkUserExists } from '../utils/middleware';
 
 const router = express.Router();
 
@@ -73,23 +73,29 @@ router.post('/get-checkout-token', itemsForCheckoutValidation, async (request: R
   }
 })
 
-// POST: Add a Comment to a Product
-router.post("/:productId/comments", commentValidation, async (request: Request, response: Response) => {
+// get checkout token items
+router.post('/get-checkout-token-items', getTokenItemsValidation, async (request: Request, response: Response) => {
   try {
-    const errors = validationResult(request);
+    const errors = validationResult(request.body);
     if (!errors.isEmpty()) {
-      return response.status(400).json({ message: errors.array()[0].msg });
+      return response.status(400).json({ data: null, message: errors.array()[0].msg });
     }
-    const productId = request.params.productId;
-    const newComment = await ProductServices.addCommentToProduct(productId, request.body);
-    return response.status(201).json({
-      message: "commend added successfully",
-      newComment
-    });
-  } catch (error: any) {
-    return response.status(500).json({ message: error.message });
+    const checkoutTokenItems = ProductServices.decodeCheckoutToken(request.body.token)
+    const products = await Promise.all(
+      checkoutTokenItems.map(async (product) => {
+        const productDetails = await ProductServices.getProductById(product.id);
+        return {
+          details: productDetails,
+          quantity: product.quantity,
+        };
+      })
+    );
+    return response.status(201).json({ data: products });
+  } catch (error) {
+    return response.status(500).json({ data: null, message: 'Internal Server Error' });
   }
-});
+})
+
 
 // POST: Add a Review to a Product
 router.post("/:productId/reviews", reviewValidation, async (request: Request, response: Response) => {

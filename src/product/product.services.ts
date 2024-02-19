@@ -99,3 +99,18 @@ export const getLatestProduct = async () => {
     return bags;
 }
 
+// generate checkout token for checkout pages
+export const generateCheckoutToken = (items: TItemForCheckout[]) : string => {
+    const payload = { items };
+    const secret = process.env.CHECKOUT_JWT_TOKEN as string
+    const token = jwt.sign(payload, secret, { expiresIn: '20m' });
+    return token
+}
+
+// decode token for checkout
+export const decodeCheckoutToken = (token: string): TItemForCheckout[] => {
+    const secret = process.env.CHECKOUT_JWT_TOKEN as string;
+    const decoded = jwt.verify(token, secret) as any
+    return decoded.items
+};
+
