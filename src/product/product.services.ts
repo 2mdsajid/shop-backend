@@ -1,6 +1,6 @@
 import { Comment, Rating, Review } from '@prisma/client';
 import prisma from "../utils/prisma";
-import { TItemForCheckout, TypeBaseProduct, TypeDetailedProduct } from "./product.types";
+import { TItemForCheckout, TItemForPlaceOrder, TOrderInfo, TypeBaseProduct, TypeDetailedProduct } from "./product.types";
 import jwt from 'jsonwebtoken'
 
 export const getProductById = async (productId: string): Promise<TypeDetailedProduct | null> => {
@@ -100,7 +100,7 @@ export const getLatestProduct = async () => {
 }
 
 // generate checkout token for checkout pages
-export const generateCheckoutToken = (items: TItemForCheckout[]) : string => {
+export const generateCheckoutToken = (items: TItemForCheckout[]): string => {
     const payload = { items };
     const secret = process.env.CHECKOUT_JWT_TOKEN as string
     const token = jwt.sign(payload, secret, { expiresIn: '20m' });
@@ -113,4 +113,34 @@ export const decodeCheckoutToken = (token: string): TItemForCheckout[] => {
     const decoded = jwt.verify(token, secret) as any
     return decoded.items
 };
+// generate checkout token for checkout pages
+export const generatePlaceOrderToken = (items: TItemForPlaceOrder[]): string => {
+    const payload = { items };
+    const secret = process.env.CHECKOUT_JWT_TOKEN as string
+    const token = jwt.sign(payload, secret, { expiresIn: '20m' });
+    return token
+}
+
+// decode token for checkout
+export const decodePlaceOrderToken = (token: string): TItemForPlaceOrder[] => {
+    const secret = process.env.CHECKOUT_JWT_TOKEN as string;
+    const decoded = jwt.verify(token, secret) as any
+    return decoded.items
+};
+
+// storign the ordertoken in the respective user database
+export const storeOrderTokenToDatabase = async (token: string, userId: string): Promise<TOrderInfo> => {
+    const newOrder = await prisma.orders.create({
+        data: {
+            userId: userId,
+            orderToken: token
+        },
+        select: {
+            id: true,
+            createdAt: true,
+            status: true
+        }
+    })
+    return newOrder
+}
 

@@ -7,6 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id            String     @id @unique @default(uuid())
+  name          String
+  email         String     @unique
+  image         String?
+  password      String?    @default("")
+  role          String     @default("user")
+  key           String?    @default("")
+  createdAt     DateTime   @default(now())
+  emailVerified DateTime?
+  ip            String?    @default("")
+  Orders        Orders[]
+  Account       Account?
+  CartItem      CartItem[]
+  Comment       Comment[]
+  Product       Product[]
+  Rating        Rating[]
+  Review        Review[]
+  Session       Session[]
+}
+
 model Account {
   id                String  @id
   userId            String  @unique
@@ -25,8 +46,47 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
+model Orders {
+  id         String   @id @unique @default(uuid())
+  orderToken String
+  createdAt  DateTime @default(now())
+  status     String   @default("created")
+  userId     String
+  User       User     @relation(fields: [userId], references: [id])
+}
+
+model Product {
+  id             String    @id @unique @default(uuid())
+  name           String
+  description    String
+  price          Float
+  imageUrl       String
+  category       String
+  isFreeDelivery Boolean   @default(false)
+  itemsLeft      Int       @default(0)
+  brand          String?
+  images         String[]
+  isNew          Boolean?
+  hasDiscount    Discount?
+
+  userId   String
+  CartItem CartItem[]
+  Comment  Comment[]
+  User     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Rating   Rating[]
+  Review   Review[]
+}
+
+model Discount {
+  id        Int     @id @unique @default(autoincrement())
+  state     Boolean @default(false)
+  value     Float   @default(0)
+  productId String  @unique
+  Product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
 model CartItem {
-  id        Int  @id @unique @default(autoincrement())
+  id        Int     @id @unique @default(autoincrement())
   productId String
   quantity  Int
   userId    String
@@ -44,22 +104,6 @@ model Comment {
   createdAt DateTime @default(now())
   Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Product {
-  id          String     @id @unique @default(uuid())
-  name        String
-  description String
-  price       Float
-  imageUrl    String
-  userId      String
-  CartItem    CartItem[]
-  Comment     Comment[]
-  User        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  Rating      Rating[]
-  Review      Review[]
-
-  @@index([userId])
 }
 
 model Rating {
@@ -89,26 +133,6 @@ model Session {
   userId       String
   expires      DateTime
   User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model User {
-  id            String     @id @unique @default(uuid())
-  name          String
-  email         String     @unique
-  image         String?
-  password      String?    @default("")
-  role          String     @default("user")
-  key           String?    @default("")
-  createdAt     DateTime   @default(now())
-  emailVerified DateTime?
-  ip            String?    @default("")
-  Account       Account?
-  CartItem      CartItem[]
-  Comment       Comment[]
-  Product       Product[]
-  Rating        Rating[]
-  Review        Review[]
-  Session       Session[]
 }
 
 model VerificationToken {

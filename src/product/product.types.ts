@@ -31,6 +31,18 @@ export type TItemForCheckout = {
   quantity: number
 }
 
+export type TItemForPlaceOrder = {
+  id: string
+  price: number
+  quantity: number
+}
+
+export type TOrderInfo = {
+  id: string;
+  createdAt: Date;
+  status: string;
+}
+
 export const productValidation: ValidationChain[] = [
   body('name').notEmpty().withMessage('Name must be provided').isString().withMessage('Name must be a string'),
   body('description').notEmpty().withMessage('Description must be provided').isString().withMessage('Description must be a string'),
@@ -72,6 +84,35 @@ export const itemsForCheckoutValidation: ValidationChain[] = [
   body('*.*.quantity')
     .isInt({ min: 1 })
     .withMessage('Quantity must be a positive integer'),
+];
+
+// it has id, quantity and price as objects array
+export const itemsForPlaceOrderValidation: ValidationChain[] = [
+  body()
+    .isArray({ min: 1 })
+    .withMessage('Items must be provided as an array with at least one item'),
+  body('*')
+    .isObject()
+    .withMessage('Each item must be an object')
+    .bail()
+    .custom((value: any) => {
+      // Check that each item has 'id' and 'quantity' fields
+      if (!value.id || !value.quantity || !value.price) {
+        throw new Error('Each item must have "id" and "quantity" and "price" fields');
+      }
+      return true;
+    }),
+  body('*.*.id')
+    .notEmpty()
+    .withMessage('Item ID must be provided')
+    .isString()
+    .withMessage('Item ID must be a string'),
+  body('*.*.quantity')
+    .isInt({ min: 1 })
+    .withMessage('Quantity must be a positive integer'),
+  body('*.*.price')
+    .isInt({ min: 1 })
+    .withMessage('price must be a positive integer'),
 ];
 
 
