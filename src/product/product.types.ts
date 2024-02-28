@@ -11,10 +11,10 @@ export type TypeBaseProduct = {
   category: string;
   isFreeDelivery: boolean;
   itemsLeft: number;
-  brand?: string | null;
+  brand: string | null;
   images: string[];
-  isNew?: boolean | null;
-  hasDiscount?: {
+  isNew: boolean | null;
+  hasDiscount: {
     state: boolean;
     value: number;
   } | null;
@@ -41,6 +41,11 @@ export type TOrderInfo = {
   id: string;
   createdAt: Date;
   status: string;
+}
+
+export type ShadCnToast = {
+  state: 'success' | 'destructive',
+  message: string
 }
 
 export const productValidation: ValidationChain[] = [

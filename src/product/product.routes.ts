@@ -1,18 +1,19 @@
 import express, { Request, Response } from 'express';
 import * as ProductServices from './product.services'; // Import the product services
 import { body, validationResult } from 'express-validator';
-import { commentValidation, getTokenItemsValidation, itemsForCheckoutValidation, itemsForPlaceOrderValidation, productValidation, ratingValidation, reviewValidation, updateProductValidation } from './product.types';
+import { ShadCnToast, commentValidation, getTokenItemsValidation, itemsForCheckoutValidation, itemsForPlaceOrderValidation, productValidation, ratingValidation, reviewValidation, updateProductValidation } from './product.types';
 import { RequestWithUserId, checkUserExists } from '../utils/middleware';
 
 const router = express.Router();
 
-// GET: List of all Products
-router.get("/", async (request: Request, response: Response) => {
+
+// // GET: List of all Products
+router.get("/get-all", async (request: Request, response: Response) => {
   try {
     const products = await ProductServices.listProducts();
-    return response.status(200).json(products);
+    return response.status(200).json({ data: products });
   } catch (error: any) {
-    return response.status(500).json({ message: error.message });
+    return response.status(500).json({ data: null, message: error.message });
   }
 });
 
@@ -55,6 +56,49 @@ router.post("/add", checkUserExists, productValidation, async (request: Request,
     });
   } catch (error: any) {
     return response.status(500).json({ message: error.message });
+  }
+});
+
+// delete a product from the DB
+router.get('/delete/:productId', async (request: Request, response: Response) => {
+  try {
+    const productId = request.params.productId;
+    const product = await ProductServices.getProductById(productId);
+    if (!product) {
+      const responseMessage: ShadCnToast = { state: 'destructive', message: 'Product Doesn\'t Exist' }
+      return response.status(404).json(responseMessage);
+    }
+    await ProductServices.deleteProduct(productId)
+    const responseMessage: ShadCnToast = { state: 'success', message: 'Product Deleted Successfully' }
+    return response.status(200).json(responseMessage);
+  } catch (error) {
+    const responseMessage: ShadCnToast = { state: 'destructive', message: 'Internal Server Error!' }
+    return response.status(500).json(responseMessage);
+  }
+})
+
+// Update a Product by ID
+router.post("/update/:productId", productValidation, async (request: Request, response: Response) => {
+  try {
+    const errors = validationResult(request);
+    if (!errors.isEmpty()) {
+      return response.status(400).json({ message: errors.array()[0].msg });
+    }
+
+    const productId = request.params.productId;
+    const product = await ProductServices.getProductById(productId);
+    if (!product) {
+      const responseMessage: ShadCnToast = { state: 'destructive', message: 'Product Doesn\'t Exist' }
+      return response.status(404).json(responseMessage);
+    }
+
+    await ProductServices.updateProduct(productId, request.body);
+    const responseMessage: ShadCnToast = { state: 'success', message: 'Product Updated Successfully!' }
+    return response.status(201).json(responseMessage);
+
+  } catch (error: any) {
+    const responseMessage: ShadCnToast = { state: 'destructive', message: 'Internal Server Error!' }
+    return response.status(500).json(responseMessage);
   }
 });
 

@@ -3,6 +3,27 @@ import prisma from "../utils/prisma";
 import { TItemForCheckout, TItemForPlaceOrder, TOrderInfo, TypeBaseProduct, TypeDetailedProduct } from "./product.types";
 import jwt from 'jsonwebtoken'
 
+export const listProducts = async (): Promise<TypeBaseProduct[]> => {
+    return prisma.product.findMany({
+        select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            imageUrl: true,
+            category: true,
+            userId: true,
+            isFreeDelivery: true,
+            itemsLeft: true,
+            brand: true,
+            images: true,
+            isNew: true,
+            hasDiscount: true,
+        },
+    });
+};
+
+
 export const getProductById = async (productId: string): Promise<TypeDetailedProduct | null> => {
     return prisma.product.findUnique({
         where: {
@@ -77,6 +98,40 @@ export const createProduct = async (productData: TypeBaseProduct) => {
     }
 }
 
+// update an item from the product
+export const updateProduct = async (productId: string, productData: TypeBaseProduct): Promise<void> => {
+    const { name, description, price, imageUrl, category, isFreeDelivery, itemsLeft, brand, images, isNew, hasDiscount, userId } = productData
+    const updatedProduct = await prisma.product.update({
+        where: {
+            id: productId,
+        },
+        data: {
+            name,
+            description,
+            price,
+            imageUrl,
+            category,
+            isFreeDelivery,
+            itemsLeft,
+            brand,
+            images,
+            isNew,
+        },
+    });
+
+    // If hasDiscount is provided, create discount and associate with the product
+    if (hasDiscount) {
+        const updatedDiscount = await prisma.discount.update({
+            where: {
+                productId: productId,
+            }, data: {
+                state: hasDiscount.state,
+                value: hasDiscount.value,
+            },
+        });
+    }
+};
+
 export const getLatestProduct = async () => {
     const bags = await prisma.product.findMany({
         where: {
@@ -144,3 +199,11 @@ export const storeOrderTokenToDatabase = async (token: string, userId: string): 
     return newOrder
 }
 
+// delete an item from the product
+export const deleteProduct = async (id: string): Promise<void> => {
+    await prisma.product.delete({
+        where: {
+            id: id,
+        }
+    })
+}
