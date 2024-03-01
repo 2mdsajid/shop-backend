@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
-import * as ProductServices from './product.services'; // Import the product services
-import { body, validationResult } from 'express-validator';
-import { ShadCnToast, commentValidation, getTokenItemsValidation, itemsForCheckoutValidation, itemsForPlaceOrderValidation, productValidation, ratingValidation, reviewValidation, updateProductValidation } from './product.types';
+import { validationResult } from 'express-validator';
 import { RequestWithUserId, checkUserExists } from '../utils/middleware';
+import * as ProductServices from './product.services'; // Import the product services
+import { ShadCnToast, getTokenItemsValidation, itemsForCheckoutValidation, itemsForPlaceOrderValidation, productValidation, updateOrderStatusValidation } from './product.types';
 
 const router = express.Router();
 
@@ -40,7 +40,6 @@ router.get('/get-latest', async (request: Request, response: Response) => {
     return response.status(500).json({ data: null, message: 'Internal Server Error' });
   }
 })
-
 
 // // POST: Create a new Product
 router.post("/add", checkUserExists, productValidation, async (request: Request, response: Response) => {
@@ -155,7 +154,8 @@ router.post('/get-checkout-token-items', getTokenItemsValidation, async (request
   }
 })
 
-// get checkout token items details from based on tokens from frontend 
+// probably not used
+// get place-order token items details from tokens from frontend 
 router.post('/get-place-order-token-items', getTokenItemsValidation, async (request: Request, response: Response) => {
   try {
     const errors = validationResult(request.body);
@@ -191,8 +191,11 @@ router.post('/confirm-and-get-place-order-items', getTokenItemsValidation, check
     const userId = request.userId as string;
     const orderInfo = await ProductServices.storeOrderTokenToDatabase(request.body.token, userId)
 
+    // save order items to db
     // fetch the order details from db
     const checkoutTokenItems = ProductServices.decodePlaceOrderToken(request.body.token)
+    await ProductServices.storeOrderItems(checkoutTokenItems, orderInfo.id)
+
     const products = await Promise.all(
       checkoutTokenItems.map(async (product) => {
         const productDetails = await ProductServices.getProductById(product.id);
@@ -210,5 +213,55 @@ router.post('/confirm-and-get-place-order-items', getTokenItemsValidation, check
     return response.status(500).json({ data: null, message: 'Internal Server Error' });
   }
 })
+
+// get all order stats fro dashboard
+router.get('/get-all-orders', async (request: Request, response: Response) => {
+  try {
+    const allOrders = await ProductServices.getAllOrders()
+    return response.status(201).json({ data: allOrders });
+  } catch (error) {
+    return response.status(500).json({ data: null, message: 'Internal Server Error' });
+  }
+})
+
+// get single order
+router.get('/get-order/:orderId', async (request: Request, response: Response) => {
+  try {
+    const orderId = request.params.orderId
+    if (!orderId) {
+      return response.status(401).json({ data: null, messsage: 'Missing Some Parameters!' })
+    }
+    const { products, orderInfo } = await ProductServices.getOrderById(orderId)
+    return response.status(201).json({ data: { products, orderInfo } });
+  } catch (error) {
+    return response.status(500).json({ data: null, message: 'Internal Server Error' });
+  }
+})
+
+// update the status of order
+router.post('/update-order-status/:orderId', updateOrderStatusValidation, async (request: Request, response: Response) => {
+  try {
+    const orderId = request.params.orderId
+    if (!orderId) {
+      const responseMessage: ShadCnToast = { state: 'destructive', message: 'Order ID missing' }
+      return response.status(400).json(responseMessage)
+    }
+
+    const errors = validationResult(request.body);
+    if (!errors.isEmpty()) {
+      return response.status(400).json({ data: null, message: errors.array()[0].msg });
+    }
+
+    await ProductServices.updateOrderStatus(request.body.status, orderId)
+    const responseMessage: ShadCnToast = { state: 'success', message: 'Order Status updated successfully!' }
+    return response.status(200).json(responseMessage)
+
+  } catch (error) {
+    const responseMessage: ShadCnToast = { state: 'destructive', message: 'Internal Server Error!' }
+    return response.status(500).json(responseMessage)
+
+  }
+})
+
 
 export default router;

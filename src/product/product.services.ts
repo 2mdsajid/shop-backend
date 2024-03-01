@@ -1,6 +1,6 @@
-import { Comment, Rating, Review } from '@prisma/client';
+import { Comment, Order, OrderItem, Rating, Review } from '@prisma/client';
 import prisma from "../utils/prisma";
-import { TItemForCheckout, TItemForPlaceOrder, TOrderInfo, TypeBaseProduct, TypeDetailedProduct } from "./product.types";
+import { TItemForCheckout, TItemForPlaceOrder, TOrderInfoExtended, TOrderInfo, TypeBaseProduct, TypeDetailedProduct, TOrderStatsTable, TOrderProductBasic, TOrderStatus } from "./product.types";
 import jwt from 'jsonwebtoken'
 
 export const listProducts = async (): Promise<TypeBaseProduct[]> => {
@@ -183,6 +183,21 @@ export const decodePlaceOrderToken = (token: string): TItemForPlaceOrder[] => {
     return decoded.items
 };
 
+// aving the items in an order
+//  to retrive them by this method .. not by jwt token
+export const storeOrderItems = async (items: TItemForPlaceOrder[], orderId: string): Promise<void> => {
+    const orderItemsData = items.map((item) => ({
+        productId: item.id,
+        price: item.price,
+        quantity: item.quantity,
+        orderId: orderId,
+    }));
+
+    await prisma.orderItem.createMany({
+        data: orderItemsData,
+    });
+}
+
 // storign the ordertoken in the respective user database
 export const storeOrderTokenToDatabase = async (token: string, userId: string): Promise<TOrderInfo> => {
     const newOrder = await prisma.orders.create({
@@ -207,3 +222,94 @@ export const deleteProduct = async (id: string): Promise<void> => {
         }
     })
 }
+
+// get all orders for dashboard -- admin
+export const getAllOrders = async (): Promise<TOrderStatsTable[] | null> => {
+    const allOrders = await prisma.order.findMany({
+        select: {
+            id: true,
+            createdAt: true,
+            status: true,
+            User: {
+                select: {
+                    name: true,
+                    email: true
+                }
+            }
+        }
+    })
+
+    if (!allOrders || allOrders.length === 0) {
+        return null;
+    }
+
+    const ordersStatsTable: TOrderStatsTable[] = allOrders.map((order) => {
+        return {
+            id: order.id,
+            createdAt: order.createdAt.toISOString(),
+            status: order.status,
+            userName: order.User.name,
+            userEmail: order.User.email,
+        };
+    })
+
+    return ordersStatsTable
+}
+
+// get a singl order  -- admin mb
+export const getOrderById = async (id: string): Promise<{
+    products: TOrderProductBasic[],
+    orderInfo: TOrderInfo
+}> => {
+    const order = await prisma.order.findUnique({
+        where: {
+            id: id,
+        },
+        include: {
+            orderItems: {
+                select: {
+                    price: true,
+                    quantity: true,
+                    Product: {
+                        select: {
+                            name: true,
+                            imageUrl: true,
+                            category: true,
+                        }
+                    }
+                }
+            }
+        }
+    })
+
+    if (!order) throw new Error()
+
+    const products = order?.orderItems.map(item => ({
+        name: item.Product.name,
+        imageUrl: item.Product.imageUrl,
+        category: item.Product.category,
+        price: item.price,
+        quantity: item.quantity,
+    })) || []
+
+    const orderInfo = {
+        id: order.id,
+        createdAt: order.createdAt,
+        status: order.status,
+    }
+
+    return { products, orderInfo }
+}
+
+// to update the order status of specific order
+export const updateOrderStatus = async (status: TOrderStatus, orderId: string): Promise<void> => {
+    await prisma.order.update({
+        where: {
+            id: orderId,
+        },
+        data: {
+            status: status
+        }
+    })
+}
+

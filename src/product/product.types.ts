@@ -37,11 +37,37 @@ export type TItemForPlaceOrder = {
   quantity: number
 }
 
+export type TOrderProductBasic = {
+  name: string;
+  imageUrl: string;
+  category: string;
+  price: number;
+  quantity: number;
+}
+
+export type TOrderStatus = 'created' | 'delivered' | 'shipping'
+
 export type TOrderInfo = {
   id: string;
   createdAt: Date;
   status: string;
 }
+
+export type TOrderInfoExtended = TOrderInfo & {
+  orderToken: string;
+  User: {
+    name: string;
+    email: string;
+  };
+}
+
+export type TOrderStatsTable = {
+  id: string;
+  createdAt: string;
+  status: string;
+  userName: string;
+  userEmail: string;
+};
 
 export type ShadCnToast = {
   state: 'success' | 'destructive',
@@ -126,6 +152,23 @@ export const getTokenItemsValidation: ValidationChain[] = [
   body('token').notEmpty().withMessage('Content must be provided').isString().withMessage('Content must be a string'),
 ];
 
+export const updateOrderStatusValidation: ValidationChain[] = [
+  body('status')
+    .notEmpty().withMessage('Status must be provided')
+    .isString().withMessage('Status must be a string')
+    .custom((value: string) => {
+      const validStatuses = ['created', 'delivered', 'shipping'];
+      if (!validStatuses.includes(value)) {
+        throw new Error('Invalid status');
+      }
+      return true;
+    }),
+];
+
+export const commentValidation: ValidationChain[] = [
+  body('content').notEmpty().withMessage('Content must be provided').isString().withMessage('Content must be a string'),
+  body('userId').notEmpty().withMessage('User ID must be provided').isString().withMessage('User ID must be a string'),
+];
 
   export const reviewValidation: ValidationChain[] = [
     body('title').notEmpty().withMessage('Title must be provided').isString().withMessage('Title must be a string'),

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from "./prisma";
 
-interface RequestWithUserId extends Request {
+export interface RequestWithUserId extends Request {
     userId?: string;
   }
 

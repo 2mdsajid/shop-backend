@@ -18,7 +18,7 @@ model User {
   createdAt     DateTime   @default(now())
   emailVerified DateTime?
   ip            String?    @default("")
-  Orders        Orders[]
+  Orders        Order[]
   Account       Account?
   CartItem      CartItem[]
   Comment       Comment[]
@@ -46,13 +46,25 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
-model Orders {
-  id         String   @id @unique @default(uuid())
+model Order {
+  id         String      @id @unique @default(uuid())
   orderToken String
-  createdAt  DateTime @default(now())
-  status     String   @default("created")
+  createdAt  DateTime    @default(now())
+  status     String      @default("created")
   userId     String
-  User       User     @relation(fields: [userId], references: [id])
+  User       User        @relation(fields: [userId], references: [id])
+  orderItems OrderItem[]
+}
+
+model OrderItem {
+  id        String @unique @default(uuid())
+  productId String
+  price     Float
+  quantity  Int
+  orderId   String
+
+  Product Product @relation(fields: [productId], references: [id])
+  Order   Order   @relation(fields: [orderId], references: [id])
 }
 
 model Product {
@@ -69,13 +81,15 @@ model Product {
   isNew          Boolean?
   hasDiscount    Discount?
 
-  userId   String
-  CartItem CartItem[]
-  Comment  Comment[]
-  User     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  Rating   Rating[]
-  Review   Review[]
+  userId    String
+  CartItem  CartItem[]
+  Comment   Comment[]
+  User      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Rating    Rating[]
+  Review    Review[]
+  OrderItem OrderItem[]
 }
+
 
 model Discount {
   id        Int     @id @unique @default(autoincrement())
