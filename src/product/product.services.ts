@@ -119,17 +119,24 @@ export const updateProduct = async (productId: string, productData: TypeBaseProd
         },
     });
 
-    // If hasDiscount is provided, create discount and associate with the product
+    // If hasDiscount is provided, create discount - if not found else associate with the product
     if (hasDiscount) {
-        const updatedDiscount = await prisma.discount.update({
+        await prisma.discount.upsert({
             where: {
                 productId: productId,
-            }, data: {
+            },
+            update: {
                 state: hasDiscount.state,
                 value: hasDiscount.value,
             },
+            create: {
+                state: hasDiscount.state,
+                value: hasDiscount.value,
+                productId: updatedProduct.id,
+            },
         });
     }
+    
 };
 
 export const getLatestProduct = async () => {
