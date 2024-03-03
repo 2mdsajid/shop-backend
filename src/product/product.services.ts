@@ -3,6 +3,38 @@ import prisma from "../utils/prisma";
 import { TItemForCheckout, TItemForPlaceOrder, TOrderInfoExtended, TOrderInfo, TypeBaseProduct, TypeDetailedProduct, TOrderStatsTable, TOrderProductBasic, TOrderStatus } from "./product.types";
 import jwt from 'jsonwebtoken'
 
+export const getProductCategories = async (): Promise<string[] | null> => {
+    const categories = await prisma.product.findMany({
+        distinct: ['category'],
+    });
+    return categories.map((product) => product.category);
+}
+
+export const getProductsByCategory = async (category: string): Promise<TypeBaseProduct[] | null> => {
+    const products = await prisma.product.findMany({
+        where: {
+            category: category,
+        },
+        select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            imageUrl: true,
+            category: true,
+            userId: true,
+            isFreeDelivery: true,
+            itemsLeft: true,
+            brand: true,
+            images: true,
+            isNew: true,
+            hasDiscount: true,
+        },
+    });
+
+    return products;
+}
+
 export const listProducts = async (): Promise<TypeBaseProduct[]> => {
     return prisma.product.findMany({
         select: {

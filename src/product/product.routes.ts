@@ -6,6 +6,29 @@ import { ShadCnToast, getTokenItemsValidation, itemsForCheckoutValidation, items
 
 const router = express.Router();
 
+// get product categories
+router.get('/get-categories', async (request: Request, response: Response) => {
+  try {
+    const categories = await ProductServices.getProductCategories();
+    return response.status(200).json({ data: categories });
+  } catch (error: any) {
+    return response.status(500).json({ data: null, message: error.message });
+  }
+})
+
+// get products by categories
+router.get('/get-products-by-category/:category', async (request: Request, response: Response) => {
+  try {
+    const category = request.params.category
+    if (!category) {
+      return response.status(404).json({ data: null, message: 'No category' });
+    }
+    const products = await ProductServices.getProductsByCategory(category);
+    return response.status(200).json({ data: products });
+  } catch (error: any) {
+    return response.status(500).json({ data: null, message: error.message });
+  }
+})
 
 // // GET: List of all Products
 router.get("/get-all", async (request: Request, response: Response) => {
