@@ -8,10 +8,11 @@ import user from "./user/user.routes";
 dotenv.config();
 
 if (!process.env.PORT) {
+  console.log("Please specify port number ")
   process.exit(1);
 }
 
-const PORT: number = parseInt(process.env.PORT as string, 10);
+const PORT: number = parseInt(process.env.PORT as string, 10) || 3002
 
 const app = express();
 
