@@ -3,7 +3,6 @@ import * as dotenv from "dotenv";
 import express from "express";
 import cartRouter from "./cart/cart.routes";
 import router from "./product/product.routes";
-import user from "./user/user.routes";
 
 dotenv.config();
 
@@ -20,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/product", router);
 app.use("/cart", cartRouter);
-app.use("/user", user);
+// app.use("/user", user);
 
 app.get('/', async (req, res) => {
   try {

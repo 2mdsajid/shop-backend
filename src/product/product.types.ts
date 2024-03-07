@@ -147,7 +147,6 @@ export const itemsForPlaceOrderValidation: ValidationChain[] = [
 ];
 
 
-export const updateProductValidation: ValidationChain[] = [
 export const getTokenItemsValidation: ValidationChain[] = [
   body('token').notEmpty().withMessage('Content must be provided').isString().withMessage('Content must be a string'),
 ];

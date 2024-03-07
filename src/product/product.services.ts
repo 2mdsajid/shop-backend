@@ -239,7 +239,7 @@ export const storeOrderItems = async (items: TItemForPlaceOrder[], orderId: stri
 
 // storign the ordertoken in the respective user database
 export const storeOrderTokenToDatabase = async (token: string, userId: string): Promise<TOrderInfo> => {
-    const newOrder = await prisma.orders.create({
+    const newOrder = await prisma.order.create({
         data: {
             userId: userId,
             orderToken: token
