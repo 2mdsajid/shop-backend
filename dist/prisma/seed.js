@@ -35,40 +35,29 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkUserExists = void 0;
-var prisma_1 = __importDefault(require("./prisma"));
-var checkUserExists = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var userId, existingUser, error_1;
+var product_services_1 = require("../src/product/product.services");
+var data_1 = require("../src/utils/data");
+var createProducts = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var _i, dummy_bag_data_1, product, baseProduct;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                userId = req.body.userId;
+                _i = 0, dummy_bag_data_1 = data_1.dummy_bag_data;
                 _a.label = 1;
             case 1:
-                _a.trys.push([1, 3, , 4]);
-                return [4 /*yield*/, prisma_1.default.user.findUnique({
-                        where: {
-                            id: userId,
-                        },
-                    })];
+                if (!(_i < dummy_bag_data_1.length)) return [3 /*break*/, 4];
+                product = dummy_bag_data_1[_i];
+                return [4 /*yield*/, (0, product_services_1.createProduct)(product)];
             case 2:
-                existingUser = _a.sent();
-                if (!existingUser) {
-                    return [2 /*return*/, res.status(404).json({ message: 'User not found' })];
-                }
-                req.userId = userId; // Assigning userId to req.userId
-                next();
-                return [3 /*break*/, 4];
+                baseProduct = _a.sent();
+                console.log("🚀 ~ createProducts ~ baseProduct:", baseProduct);
+                _a.label = 3;
             case 3:
-                error_1 = _a.sent();
-                console.error(error_1);
-                return [2 /*return*/, res.status(500).json({ message: 'Internal Server Error' })];
+                _i++;
+                return [3 /*break*/, 1];
             case 4: return [2 /*return*/];
         }
     });
 }); };
-exports.checkUserExists = checkUserExists;
+createProducts();

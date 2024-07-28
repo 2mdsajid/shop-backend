@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -39,36 +62,36 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkUserExists = void 0;
-var prisma_1 = __importDefault(require("./prisma"));
-var checkUserExists = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var userId, existingUser, error_1;
+var cors_1 = __importDefault(require("cors"));
+var dotenv = __importStar(require("dotenv"));
+var express_1 = __importDefault(require("express"));
+var cart_routes_1 = __importDefault(require("./cart/cart.routes"));
+var product_routes_1 = __importDefault(require("./product/product.routes"));
+dotenv.config();
+if (!process.env.PORT) {
+    console.log("Please specify port number ");
+    process.exit(1);
+}
+var PORT = parseInt(process.env.PORT, 10) || 3002;
+var app = (0, express_1.default)();
+app.use((0, cors_1.default)());
+app.use(express_1.default.json());
+app.use("/product", product_routes_1.default);
+app.use("/cart", cart_routes_1.default);
+// app.use("/user", user);
+app.get('/', function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                userId = req.body.userId;
-                _a.label = 1;
-            case 1:
-                _a.trys.push([1, 3, , 4]);
-                return [4 /*yield*/, prisma_1.default.user.findUnique({
-                        where: {
-                            id: userId,
-                        },
-                    })];
-            case 2:
-                existingUser = _a.sent();
-                if (!existingUser) {
-                    return [2 /*return*/, res.status(404).json({ message: 'User not found' })];
-                }
-                req.userId = userId; // Assigning userId to req.userId
-                next();
-                return [3 /*break*/, 4];
-            case 3:
-                error_1 = _a.sent();
-                console.error(error_1);
-                return [2 /*return*/, res.status(500).json({ message: 'Internal Server Error' })];
-            case 4: return [2 /*return*/];
+        try {
+            return [2 /*return*/, res.status(200).json({
+                    message: 'Hello, please do not cause unnecessary API calls',
+                })];
         }
+        catch (error) {
+            return [2 /*return*/, res.status(500).json({ message: error.message })];
+        }
+        return [2 /*return*/];
     });
-}); };
-exports.checkUserExists = checkUserExists;
+}); });
+app.listen(PORT, function () {
+    console.log("Listening on port ".concat(PORT));
+});
