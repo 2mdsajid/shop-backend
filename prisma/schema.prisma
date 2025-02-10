@@ -1,0 +1,261 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// different users roles
+enum ROLE {
+  USER
+  ADMIN
+  SAJID
+}
+
+enum ORDER_STATUS {
+  CREATED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id       String  @id @unique @default(uuid())
+  googleId String? @unique
+  email    String  @unique
+
+  name      String
+  image     String?
+  password  String   @default("")
+  role      ROLE     @default(USER)
+  key       String?
+  createdAt DateTime @default(now())
+
+  emailVerified DateTime?
+  ipAddress     String?   @default("")
+
+  // shipping address
+  shippingAddress ShippingAddress[]
+
+  // relations
+  orders     Order[]
+  cartItems  CartItem[]
+  comments   Comment[]
+  ratings    Rating[]
+  reviews    Review[]
+  sessions   Session[]
+  favourites Favourite[]
+}
+
+model ShippingAddress {
+  id          String @id @unique @default(cuid())
+  fullName    String
+  phoneNumber String
+  state       String
+  city        String
+  address     String
+  pincode     String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  orders Order[]
+}
+
+model CheckoutToken {
+  id                 String               @id @unique @default(cuid())
+  token              String               @unique
+  createdAt          DateTime             @default(now())
+  expiresAt          DateTime
+  CheckoutTokenItems CheckoutTokenItems[]
+}
+
+model CheckoutTokenItems {
+  id              String        @id @unique @default(cuid())
+  checkoutTokenId String
+  productId       String
+  quantity        Int
+
+  // relation
+  checkoutToken   CheckoutToken @relation(fields: [checkoutTokenId], references: [id], onDelete: Cascade)
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id         String      @id @unique @default(uuid())
+  orderToken String      @unique
+  createdAt  DateTime    @default(now())
+  status     ORDER_STATUS @default(CREATED)
+  
+  orderedById     String
+  orderedBy  User        @relation(fields: [orderedById], references: [id])
+  orderItems OrderItem[]
+
+  shippingAddressId String
+  shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id])
+
+  @@index([orderedById])
+}
+
+model OrderItem {
+  id        String @id @unique @default(uuid())
+  productId String
+  price     Float
+  quantity  Int
+  orderId   String
+
+  product Product @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+
+  @@index([productId])
+}
+
+model Product {
+  id          String @id @unique @default(uuid())
+  name        String
+  description String
+  price       Float
+  imageUrl    String
+
+  isFreeDelivery Boolean   @default(false)
+  availableStock Int       @default(0)
+  brand          String?
+  images         String[]
+  isNew          Boolean   @default(false)
+  discount       Discount?
+
+  // special tags
+  specifications   String?
+  careInstructions String?
+
+  // coupon
+  coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  // category is a string that is the name of the category
+  category       String
+  categoryObject Category @relation(fields: [category], references: [name], onDelete: Cascade)
+
+  cartItems  CartItem[]
+  comments   Comment[]
+  ratings    Rating[]
+  reviews    Review[]
+
+  favourites         Favourite[]
+  couponId           Int?
+
+  // for order
+  orderItems OrderItem[]
+
+  // for checkout token
+  CheckoutTokenItems CheckoutTokenItems[]
+}
+
+model Category {
+  name        String    @id @unique
+  description String
+  imageUrl    String
+  products    Product[]
+}
+
+model Discount {
+  id        Int     @id @unique @default(autoincrement())
+  isActive  Boolean @default(false)
+  value     Float   @default(0)
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model CartItem {
+  id        Int     @id @unique @default(autoincrement())
+  productId String
+  quantity  Int
+  userId    String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
+}
+
+model Comment {
+  id        Int      @id @unique @default(autoincrement())
+  content   String
+  productId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Rating {
+  id        Int      @id @unique @default(autoincrement())
+  value     Int
+  productId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        Int      @id @unique @default(autoincrement())
+  title     String
+  content   String
+  productId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id           String   @id
+  sessionToken String   @unique
+  userId       String
+  expiresAt    DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expiresAt  DateTime
+
+  @@unique([identifier, token])
+}
+
+model Announcement {
+  id        Int      @id @unique @default(autoincrement())
+  content   String
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Favourite {
+  id        Int     @id @unique @default(autoincrement())
+  productId String
+  userId    String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// will implement lateron
+model Coupon {
+  id       Int       @id @unique @default(autoincrement())
+  code     String
+  isActive Boolean   @default(false)
+  value    Float     @default(0)
+  Product  Product[]
+}
