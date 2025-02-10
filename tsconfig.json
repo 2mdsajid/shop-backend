@@ -1,9 +1,0 @@
-{
-    "compilerOptions": {
-      "outDir": "./dist",
-      "esModuleInterop": true,
-      // other compiler options...
-    },
-    // other tsconfig options...
-  }
-  
