@@ -1,12 +1,12 @@
 {
   "name": "shop",
   "module": "src/index.ts",
-  "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun --hot src/index.ts",
-    "start": "prisma migrate deploy && prisma generate && node dist/src/index.js",    "build": "tsc",
+    "start": "npx prisma migrate && npx prisma generate && node dist/index.js",
+    "build": "tsc",
     "seed": "bun scripts/seed.ts",
     "db": "bun prisma db push && bun prisma generate"
   },
